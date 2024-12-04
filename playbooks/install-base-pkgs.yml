@@ -1,0 +1,14 @@
+---
+#
+# This playbook will make sure the following list of packages are 
+# installed on all servers 
+#
+- hosts: '{{ ansible_limit | default(omit) }}'
+  gather_facts: false
+  tasks:
+  - name: Installing something useful
+    apt:
+      state: latest
+      autoremove: true
+      name:
+        - traceroute
