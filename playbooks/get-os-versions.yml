@@ -4,7 +4,6 @@
 #
 - hosts: '{{ ansible_limit | default(omit) }}'
   gather_facts: true
-  become: false
   tasks: 
   - name: Distribution
     debug: msg="{{ ansible_fqdn }} {{ ansible_distribution }}-{{ ansible_distribution_version }}"
