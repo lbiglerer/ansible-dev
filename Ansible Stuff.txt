@@ -1,0 +1,7 @@
+Commands to run ad hoc
+
+
+ansible --become-user lbigler -i /home/sci/lbigler/ansible-dev/etc/bigler_inventory.yml --playbook-dir /home/sci/lbigler/ansible-dev/playbooks -K 
+
+
+
