@@ -14,8 +14,5 @@
           64656263343738346639333865646461303332663762356163626532396230336337
   gather_facts: false
   tasks: 
-  - name: Decrypt secret
-    set_fact:
-      decrypted_secret: "{{ test_secrets }}"
   - name: Read the secret
-    debug: msg="{{ decrypted_secret }}"
+    debug: msg="{{ test_secrets }}"
