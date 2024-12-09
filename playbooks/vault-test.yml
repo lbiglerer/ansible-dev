@@ -6,5 +6,8 @@
 - hosts: '{{ ansible_limit | default(omit) }}'
   gather_facts: false
   tasks: 
-  - name: Vault-thing
-    debug: msg="{{ test-secrets }}"
+  - name: Decrypt secret
+    set_fact:
+      decrypted_secret: "{{ test-secrets }}"
+  - name: Read the secret
+    debug: msg="{{ decrypted_secret }}"
