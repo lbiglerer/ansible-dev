@@ -6,6 +6,6 @@
 - hosts: '{{ ansible_limit | default(omit) }}'
   gather_facts: false
   tasks: 
-  - name: Vault test
+  - name: Vault-test
     debug: msg="{{ test-secrets }}"
     delegate_to: localhost
