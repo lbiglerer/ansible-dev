@@ -4,7 +4,8 @@
 # to date (but will not reboot boxes; that is a different playbook)
 #
 - hosts: '{{ ansible_limit | default(omit) }}'
-  gather_facts: true
+  gather_facts: false
   tasks: 
   - name: Vault test
     debug: msg="{{ test-secrets }}"
+    delegate_to: localhost
