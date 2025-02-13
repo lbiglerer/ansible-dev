@@ -1,9 +1,4 @@
 ---
-- name: Install CUDA Keyring
-  apt:
-    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
-  when: not (cuda_keyring_installed is defined and cuda_keyring_installed)
-
 - name: Check if CUDA keyring is installed
   stat:
     path: /usr/share/keyrings/cuda-archive-keyring.gpg
@@ -13,6 +8,11 @@
 - name: Set fact for CUDA keyring installation status
   set_fact:
     cuda_keyring_installed: "{{ cuda_keyring_check.stat.exists }}"
+    
+- name: Install CUDA Keyring
+  apt:
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+  when: not (cuda_keyring_installed is defined and cuda_keyring_installed)
 
 - name: Update apt cache
   apt:
