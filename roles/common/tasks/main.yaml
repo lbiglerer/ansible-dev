@@ -1,0 +1,52 @@
+---
+- name: Remove buildtemp user
+  ansible.builtin.user:
+    name: buildtemp
+    state: absent
+    remove: true
+
+- name: Set timezone
+  ansible.builtin.timezone:
+    name: America/Denver
+
+- name: Configure /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    state: absent
+    regexp: '^127.0.1.1'
+
+- name: Configure /etc/passwd for it-users
+  ansible.builtin.lineinfile:
+    path: /etc/passwd
+    line: "+@it-users::0:0:::"
+    state: present
+    insertbefore: "::::::"
+
+- name: Configure /etc/passwd for general login
+  ansible.builtin.lineinfile:
+    path: /etc/passwd
+    line: "+::::::/usr/sbin/nologin"
+    state: present
+    insertafter: EOF
+
+- name: Configure /etc/group
+  ansible.builtin.lineinfile:
+    path: /etc/group
+    line: "+:::"
+    state: present
+    insertafter: EOF
+
+- name: create sci-it group
+  ansible.builtin.group:
+    name: sci-it
+    gid: 900
+    state: present
+
+- name: create sci-it user
+  ansible.builtin.user:
+    name: sci-it
+    uid: 900
+    group: sci-it
+    home: /
+    create_home: false
+    password: $y$j9T$URR7df8/.kIUyaldpJNHK0$eVfK7Xx/cFmo4R1eYCux4rC3Cn9eD8VkC.pzlm7YxW9

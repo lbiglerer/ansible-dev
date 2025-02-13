@@ -1,0 +1,10 @@
+--- 
+- name: (AUTOFS) autofs.conf
+  when: inventory_hostname not in ['tanium']
+  ansible.builtin.copy:
+    src: "files/etc/autofs.conf"
+    dest: /etc/autofs.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload autofs

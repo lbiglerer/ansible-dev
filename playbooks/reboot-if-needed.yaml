@@ -1,0 +1,37 @@
+---
+#
+# This playbook will figure out which hosts are waiting for a reboot and
+# will have the reboot (with sufficient warning) 
+#
+# There are two ways that a reboot might be needed: 
+#  1. the file /var/run/reboot-required exists (was created by some process) 
+#  2. the latest installed kernel is newer that the running kernel (note that
+#     when livepatch is running, a new kernel we not touch reboot-required
+#
+# To determine if a reboot is a good thing to do, we will check for the 
+# outdated running kernel issue and create reboot-required if so. After that, 
+# we will check for the existence of that file, created either through that
+# check or other means, and if so, we will reboot. 
+#
+- hosts: '{{ ansible_limit | default(omit) }}'
+  become: true
+  gather_facts: false
+  tasks: 
+  - name: Determine if running kernel is the newest version
+    check_mode: no    # this means to run even if in check mode
+    script: /sci-it/ansible/bin/check-kernel
+  - name: Determine which hosts need to be rebooted
+    check_mode: no    # this means to run even if in check mode
+    stat:
+      path: /var/run/reboot-required
+    register: rb
+  - name: Reboot if required
+    when: 
+      (rb.stat.exists and inventory_hostname not in groups["AdminServers"])
+    reboot: 
+       msg: "Rebooting for required update; please save all work and log off now!"
+       pre_reboot_delay: 300    # this is in seconds
+       reboot_timeout: 900      # this is in seconds and has to be longer than
+                                # the pre_reboot_delay- the difference between 
+                                # the two being how long we are giving the box to come
+                                # up after rebooting

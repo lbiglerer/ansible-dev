@@ -1,0 +1,15 @@
+---
+#
+# This playbook will make sure the following list of packages are 
+# installed 
+#
+
+## All hosts
+- hosts: '{{ ansible_limit | default(omit) }}'
+  gather_facts: true
+  tasks:
+  - name: Base packages installation- all hosts
+    include_role:
+      name: ubuntu-24.04
+      tasks_from: install-base-packages.yaml
+    when: (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '24.04')

@@ -1,0 +1,10 @@
+--- 
+- name: (POSTFIX) postfix main.cf
+  when: inventory_hostname not in groups["MailServers"]
+  ansible.builtin.copy:
+    src: "files/etc/postfix/main.cf"
+    dest: /etc/postfix/main.cf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload postfix

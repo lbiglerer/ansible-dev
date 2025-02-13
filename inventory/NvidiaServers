@@ -1,0 +1,5 @@
+#
+# NvidiaServers - boxes that due to their sensitive nature are not included in 
+#              regular updates
+#
+[NvidiaServers]

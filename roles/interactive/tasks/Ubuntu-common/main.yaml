@@ -1,0 +1,18 @@
+---
+#
+# Common tasks for Ubuntu interactive hosts
+#
+- hosts: '{{ ansible_limit | default(omit) }}'
+  tasks:
+    - name: Install CUPS
+      ansible.builtin.apt:
+        name: cups,cups-bsd
+        state: latest
+    - name: Configure sapphire
+      ansible.builtin.command: "lpadmin -p sapphire -E -v ipp://sapphire.sci.utah.edu/ipp/print -m everywhere"
+    - name: Configure kook
+      ansible.builtin.command: "lpadmin -p kook -E -v ipp://kook.sci.utah.edu/ipp/print -m everywhere"
+    - name: Configure sharp
+      ansible.builtin.command: "lpadmin -p sharp -E -v ipp://sharp.sci.utah.edu/ipp/print -m everywhere"
+    - name: Configure beercave
+      ansible.builtin.command: "lpadmin -p beercave -E -v ipp://beercave.sci.utah.edu/ipp/print -m everywhere"

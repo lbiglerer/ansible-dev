@@ -1,0 +1,6 @@
+---
+- name: Install Ubuntu-24.04 base packages
+  ansible.builtin.import_tasks: install-base-packages.yaml
+
+- name: Install Ubuntu-24.04 config files
+  ansible.builtin.import_tasks: install-config-files.yaml

@@ -1,0 +1,97 @@
+##
+## Postfix - main.cf
+##
+## Postfix configuration file for hosts in sci.utah.edu
+##
+
+
+##
+## Mail handling settings
+##
+
+# myorigin
+# This sets the domain that appears in mail that is posted on this machine
+# Debian specific:  Specifying a file name will cause the first
+# line of that file to be used as the name. For SCI, this file should be 
+# the FQDN of the host. 
+myorigin = /etc/mailname
+
+# mydomain
+# This sets the parent domain of $myhostname (which is calculated from the
+# local hostname)
+mydomain = sci.utah.edu
+
+# mydestination 
+# This specifies what domains this machine will deliver locally, 
+# instead of forwarding to another machine. 
+mydestination = 
+
+# mynetworks 
+# What clients this box will relay mail for. Postfix can handle a 
+# couple of standard options by using mynetworks_style (host means 
+# localhost only)
+mynetworks_style = host
+
+# inet_interfaces
+# What interfaces should Postfix assume it should accept mail from. 
+inet_interfaces = loopback-only
+
+# relay_domains
+# What domains (and subdomains of) this system will relay mail for 
+relay_domains = utah.edu
+
+# smtpd_relay_restrictions
+# Access restrictions for mail relay control that the Postfix SMTP server applies 
+# in the context of the RCPT TO command
+smtpd_relay_restrictions = permit_auth_destination, defer_unauth_destination
+
+# relayhost
+# All outgoing email should route through campus SMTP handlers
+relayhost = smtp.utah.edu
+
+# Masquerading
+# This rewrites envelope sender/recipient addresses. Set things to our domain, 
+# even in the envelope so that mail does not seem to be coming/going from 
+# individual hosts. This is important as UIT (outgoing smtp host) will not
+# recognize anything more specific than "@sci.utah.edu"; by setting the envelope
+# to sci.utah.edu the mail will get delivered correctly and leaving the headers 
+# non-masqueraded means that the hostname will still appear in the To/From 
+# so it will be easy to know from which host the email originated from
+masquerade_domains = $mydomain
+masquerade_classes = envelope_recipient, envelope_sender
+
+# aliases
+# Generally, there shouldn't be any local aliases- all mail should go
+# to the central mail server. But leaving this in in case there are local
+# exceptions that need to be created. 
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+
+##
+## General configuration settings
+##
+
+# biff
+# This is still a thing?  Default is on so turn it off
+biff = no
+
+# smtpd_banner
+# What is says it is 
+smtpd_banner = $myhostname ESMTP
+
+# readme_directory
+# Don't need local README files for Postfix
+readme_directory = no
+
+# recipient_delimiter
+# Defines the characters that can separate an email address into user and extension. 
+# Support the postfix-style standard extensions
+recipient_delimiter = +
+
+
+
+
+
+
+
+

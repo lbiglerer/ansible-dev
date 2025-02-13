@@ -1,0 +1,39 @@
+--- 
+#
+# This will copy over the config files that configure apt updates and 
+# upgrades happen
+#
+- name: (APT) Set phased upgrade key
+  ansible.builtin.copy:
+    src: "files/etc/apt/apt.conf.d/20phased-updates"
+    dest: /etc/apt/apt.conf.d/20phased-updates
+    owner: root
+    group: root
+    mode: '0444'
+
+- name: (APT) unattended upgrades config file
+  ansible.builtin.copy:
+    src: "files/etc/apt/apt.conf.d/50unattended-upgrades"
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: '0444'
+
+- name: (APT) apt-daily.timer
+  ansible.builtin.copy:
+    src: "files/lib/systemd/system/apt-daily.timer"
+    dest: /lib/systemd/system/apt-daily.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart apt-daily.timer
+
+- name: (APT) apt-daily-upgrade.timer
+  ansible.builtin.copy:
+    src: "files/lib/systemd/system/apt-daily-upgrade.timer"
+    dest: /lib/systemd/system/apt-daily-upgrade.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart apt-daily-upgrade.timer
+

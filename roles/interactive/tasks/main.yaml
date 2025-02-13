@@ -1,0 +1,4 @@
+---
+- name: Ubuntu common
+  ansible.builtin.include_tasks: "Ubuntu-common/main.yaml"
+  when: (ansible_distribution == 'Ubuntu')

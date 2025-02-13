@@ -1,0 +1,17 @@
+---
+- hosts: all
+  roles:
+    - role: common
+    - role: ubuntu-common
+      when: ansible_distribution == 'Ubuntu'
+    - role: ubuntu-24.04
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '24.04'
+
+- hosts: InteractiveServers
+  roles:
+    - interactive
+
+- hosts: NvidiaServers  # A group for servers needing NVIDIA
+  roles:
+    - role: nvidia
+      when: ansible_distribution == 'Ubuntu'

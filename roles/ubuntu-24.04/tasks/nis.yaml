@@ -1,0 +1,26 @@
+--- 
+- name: (NIS) defaultdomain
+  ansible.builtin.copy:
+    src: "files/etc/defaultdomain"
+    dest: /etc/defaultdomain
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart NIS
+
+- name: (NIS) nsswitch.conf
+  ansible.builtin.copy:
+    src: "files/etc/nsswitch.conf"
+    dest: /etc/nsswitch.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: (NIS) yp.conf
+  ansible.builtin.copy:
+    src: "files/etc/yp.conf"
+    dest: /etc/yp.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart NIS

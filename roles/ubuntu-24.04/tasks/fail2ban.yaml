@@ -1,0 +1,17 @@
+--- 
+- name: (FAIL2BAN) fail2ban jail
+  ansible.builtin.copy:
+    src: "files/etc/fail2ban/jail.d/sci-fail2ban.conf"
+    dest: /etc/fail2ban/jail.d/sci-fail2ban.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: (FAIL2BAN) reset ssh limit on servers open to the Internet
+  when: inventory_hostname in groups["SSHGatewayServers"]
+  ansible.builtin.lineinfile:
+    path: /etc/fail2ban/jail.d/sci-fail2ban.conf
+    regexp: 'maxretry'
+    line: "maxretry = 5"
+  notify: restart fail2ban

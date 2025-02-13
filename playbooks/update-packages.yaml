@@ -1,0 +1,16 @@
+---
+#
+# This playbook will make sure the packges provided through apt are up 
+# to date (but will not reboot boxes; that is a different playbook)
+#
+- hosts: '{{ ansible_limit | default(omit) }}'
+  gather_facts: false
+  tasks: 
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: dist
+      update_cache: no
+      autoremove: yes          
+      autoclean: yes
+      cache_valid_time: 21600  # in sec, this is 6h
+      lock_timeout: 120   # in seconds, how long to wait for the apt db
