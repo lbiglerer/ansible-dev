@@ -1,0 +1,8 @@
+Commands to run ad hoc
+
+
+ansible --become-user buildtemp -i /home/sci/lbigler/ansible-dev/etc/bigler_inventory.yml --playbook-dir /home/sci/lbigler/ansible-dev/playbooks -K /usr/bin/ansible-playbook --check /home/sci/lbigler/ansible-dev/playbooks/get-os-versions.yml
+
+
+
+ansible-playbook -i /home/sci/lbigler/ansible-dev/etc/bigler_inventory.yml -u buildtemp -k -T 30 -b -K /home/sci/lbigler/ansible-dev/playbooks/get-os-versions.yml
