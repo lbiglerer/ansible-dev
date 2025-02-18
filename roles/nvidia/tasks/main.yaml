@@ -18,13 +18,13 @@
   apt:
     update_cache: yes
 
-# - name: Install NVIDIA drivers (using ubuntu-drivers)
-#   command: ubuntu-drivers install
+- name: Install NVIDIA drivers (using ubuntu-drivers)
+  command: ubuntu-drivers install
 
-# - name: Install CUDA toolkit and nvtop
-#   apt:
-#     name:
-#       - nvidia-cuda-toolkit
-#       - cuda-toolkit
-#       - nvtop
-#     state: latest
+- name: Install CUDA toolkit and nvtop
+  apt:
+    name:
+      - nvidia-cuda-toolkit
+      - cuda-toolkit
+      - nvtop
+    state: latest
