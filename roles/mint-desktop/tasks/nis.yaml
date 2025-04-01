@@ -1,0 +1,32 @@
+---
+- name: (NIS) defaultdomain
+  ansible.builtin.copy:
+    src: "files/nis/defaultdomain"
+    dest: /etc/defaultdomain
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart NIS
+
+- name: (NIS) nsswitch.conf
+  ansible.builtin.copy:
+    src: "files/nis/nsswitch.conf"
+    dest: /etc/nsswitch.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: (NIS) yp.conf
+  ansible.builtin.copy:
+    src: "files/nis/yp.conf"
+    dest: /etc/yp.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart NIS
+
+- name: (NIS) enable ypbind
+  ansible.builtin.systemd_service:
+    name: "ypbind"
+    enabled: true
+    state: started

@@ -1,0 +1,71 @@
+#
+# Handlers for tasks in ubuntu-common role
+#
+---
+- name: restart QualysCloudAgent
+  ansible.builtin.systemd_service:
+    name: qualys-cloud-agent
+    state: restarted
+    daemon_reload: true
+    enabled: true
+
+- name: restart NIS
+  ansible.builtin.systemd_service:
+    name: ypbind
+    state: restarted
+    enabled: true
+
+- name: reload autofs
+  ansible.builtin.systemd_service:
+    name: autofs
+    state: reloaded
+    enabled: true
+
+- name: reload postfix
+  ansible.builtin.systemd_service:
+    name: postfix
+    state: reloaded
+    enabled: true
+
+- name: restart rsyslog
+  ansible.builtin.systemd_service:
+    name: rsyslog
+    state: restarted
+    enabled: true
+
+- name: restart sshd
+  ansible.builtin.systemd_service:
+    name: ssh
+    state: restarted
+    enabled: true
+
+- name: restart fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban
+    state: restarted
+    enabled: true
+
+- name: restart nagios-nrpe-server
+  ansible.builtin.systemd_service:
+    name: nagios-nrpe-server
+    state: restarted
+    enabled: true
+
+- name: restart apt-daily.timer
+  ansible.builtin.systemd_service:
+    name: apt-daily.timer
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+- name: restart apt-daily-upgrade.timer
+  ansible.builtin.systemd_service:
+    name: apt-daily-upgrade.timer
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+- name: update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600

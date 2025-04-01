@@ -2,5 +2,15 @@
 # NvidiaServers - Inventory file for Nvidia servers to . 
 #              install the Nvidia GPU driver and CUDA toolkit.
 #
-[NvidiaServers]
+[AllHosts:children]
+Servers
+Desktops
+InteractiveHosts
+
+[Servers]
 murray
+
+[InteractiveHosts]
+
+[Desktops]
+heber

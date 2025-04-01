@@ -1,0 +1,10 @@
+---
+- name: (RSYSLOG) uusci.conf
+  when: inventory_hostname not in groups["LogServers"]
+  ansible.builtin.copy:
+    src: "files/rsyslog/uusci.conf"
+    dest: /etc/rsyslog.d/uusci.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart rsyslog

@@ -1,0 +1,16 @@
+---
+- name: (SUDO) sudoers
+  ansible.builtin.copy:
+    src: "files/sudo/sudoers"
+    dest: /etc/sudoers
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: (SUDO) sci-it
+  ansible.builtin.copy:
+    src: "files/sudo/sci-it"
+    dest: /etc/sudoers.d/sci-it
+    owner: root
+    group: root
+    mode: '0440'
