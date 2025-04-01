@@ -1,0 +1,12 @@
+---
+- ansible.builtin.import_tasks: motd.yaml
+  when: selfadmin is not defined
+- ansible.builtin.import_tasks: nis.yaml
+  when: selfadmin is not defined
+- ansible.builtin.import_tasks: postfix.yaml
+- ansible.builtin.import_tasks: rsyslog.yaml
+  when: selfadmin is not defined
+- ansible.builtin.import_tasks: ssh.yaml
+  when: selfadmin is not defined
+- ansible.builtin.import_tasks: sudo.yaml
+  when: selfadmin is not defined

@@ -1,0 +1,12 @@
+---
+- name: Base packages installation
+  apt:
+    state: latest
+    autoremove: true
+    name:
+      - autofs
+      - fail2ban
+      - nfs-common
+      - nis
+      - postfix
+      - ubuntu-pro-client

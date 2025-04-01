@@ -1,0 +1,54 @@
+---
+- name: Base packages installation
+  apt:
+    state: latest
+    autoremove: true
+    name:
+      - atop
+      - bat
+      - bc
+      - bsd-mailx
+      - bsdmainutils
+      - btop
+      - colordiff
+      - cpuid
+      - dict
+      - emacs-nox
+      - fd-find
+      - fio
+      - fish
+      - fzf
+      - git
+      - git-delta
+      - iperf3
+      - ipmitool
+      - jq
+      - keychain
+      - ldap-utils
+      - ncal
+      - netmask
+      - nfs-common
+      - nis
+      - nmap
+      - pigz
+      - postfix
+      - pwgen
+      - python3
+      - python3-pip
+      - python3-venv
+      - rcs
+      - ripgrep
+      - sshfs
+      - tcsh
+      - traceroute
+      - tree
+      - ubuntu-pro-client
+      - unzip
+      - whois
+      - yamllint
+      - zip
+      - zsh
+      - zsh-autosuggestions
+      - zsh-dev
+      - zsh-doc
+      - zsh-syntax-highlighting

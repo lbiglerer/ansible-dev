@@ -1,0 +1,157 @@
+#!/bin/bash
+# vim: filetype=sh
+#
+# update-packages
+#
+# This script does three separate actions as a part of ensuring that
+# hosts have all necessary packages installed and are running with
+# the latest updates:
+#
+#  1. Update the apt cache
+#  2. Make sure all available updates are installed
+#
+# Note that this will not reboot any hosts even if any of these updates
+# installs something that requires a reboot for it to take affect; given
+# the disruptive nature of reboots that is left for a separate process.
+#
+# This depends on the ansible-agent being running and the env vars available
+# the agent file
+#
+
+###
+### Variables
+###
+# operational variables
+show_commands=false
+limit_arg=""
+show_diff=false
+output_json=false
+update_cache=false
+perform_updates=false
+IFS='' read -r -d '' usage <<"EOF"
+
+update-packages: Ensure the packages installed on SCI hosts are up to date
+             by: updating the cache and performing any updates.
+
+Usage: 
+  update-packages [ -h|--help ]
+  update-packages [ -d|--diff ] [ -j|--json ] [ -s|--show ] 
+              [ -u|--update ] [ -x|--execute ] <host|group>
+  
+Arguments: 
+  -d|--diff        Show the details of the changes that will/would be done
+  -h|--help        Show what you are seeing right now
+  -j|--json        Output in JSON format
+  -s|--show        Display instead of running any commands
+  -u|--update      Update the cache even if not actually taking any action
+                   (i.e. not using the -x arg) 
+  -x|--execute     Update the cache and install any available updates   
+  <host|group>     The target inventory group(s) or host(s)
+
+EOF
+
+###
+### Process Args
+###
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    -d | --diff)
+        show_diff=true
+        ;;
+    -h | --help)
+        echo "$usage" && exit 0
+        ;;
+    -j | --json)
+        output_json=true
+        ;;
+    -s | --show)
+        show_commands=true
+        ;;
+    -u | --update)
+        update_cache=true
+        ;;
+    -x | --execute)
+        perform_updates=true
+        ;;
+    -*)
+        echo "ERROR: unknown option $1" && exit 1
+        ;;
+    *)
+        if [[ -z "$limit_arg" ]]; then
+            limit_arg=$1
+        else
+            echo "ERROR: superfluous option $1" && exit 1
+        fi
+        ;;
+    esac
+    shift
+done
+
+###
+### Needs to be run as root
+###
+if [[ ${EUID} -ne 0 ]]; then
+    echo >&2 "ERROR: insufficient privileges (try sudo)"
+    exit 2
+fi
+
+###
+### Needs to have a specified target
+###
+if [[ "${limit_arg}" == "" ]]; then
+    echo >&2 "ERROR: Unspecified target groups/hosts"
+    exit 2
+fi
+# skip self-admin boxes by default (unless specified on command line)
+[[ ${limit_arg} =~ "SelfAdminHosts" ]] || limit_arg+=",!SelfAdminHosts"
+
+###
+### Load the Ansible agent info
+###
+AGENTVARS=$(/sci-it/ansible/bin/ansible-agent -i)
+if [ $? -ne 0 ]; then
+    echo >&2 "ERROR: unable to contact the Ansible fagent."
+    exit 1
+fi
+eval ${AGENTVARS}
+
+###
+### Actually get stuff done
+###
+[[ "${output_json}" != true ]] && echo "Limiting scope to: ${limit_arg}"
+
+### Action 1: update the apt cache
+if [[ "${update_cache}" = true || "${perform_updates}" = true ]]; then
+    exec_command="/usr/bin/ansible ${limit_arg} -a \"/usr/bin/apt-get update\" > /dev/null"
+    if [[ "${show_commands}" = true ]]; then
+        echo "${exec_command}"
+    else
+        [[ "${output_json}" != true ]] && echo -n "Updating cache..."
+        eval ${exec_command}
+        if [[ $? -eq 0 ]]; then 
+            [[ "${output_json}" != true ]] && echo "done"
+        else
+            echo "FAILED!"
+        fi        
+    fi
+fi
+
+### Action 2: update packages
+args=""
+exec_command=""
+[[ "${perform_updates}" != true ]] && args+="--check "
+[[ "${show_diff}" = true ]] && args+="--diff"
+[[ "${output_json}" = true ]] && exec_command+="ANSIBLE_STDOUT_CALLBACK=ansible.posix.json "
+exec_command+="/usr/bin/ansible-playbook --limit ${limit_arg} ${args} /sci-it/ansible/playbooks/update-packages.yaml"
+exec_command=$(echo $exec_command | sed 's/ \+/ /g')
+# Show or run the command
+if [[ "${show_commands}" = true ]]; then
+    echo "${exec_command}"
+else
+    eval ${exec_command}
+fi 
+
+###
+### See ya
+###
+exit 0

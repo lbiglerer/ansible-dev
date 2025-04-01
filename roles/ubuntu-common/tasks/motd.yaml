@@ -1,0 +1,17 @@
+---
+- name: (MOTD) motd file
+  block: 
+    - name: (MOTD) install motd file
+      ansible.builtin.copy:
+        src: "files/motd/motd"
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+    - name: (MOTD) disable motd-news
+      ansible.builtin.copy:
+        src: "files/motd/motd-news"
+        dest: /etc/default/motd-news
+        owner: root
+        group: root
+        mode: '0644'

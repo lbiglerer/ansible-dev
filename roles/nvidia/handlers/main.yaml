@@ -1,0 +1,7 @@
+#
+# Handlers for tasks in the nvidia role
+#
+- name: nvidia update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    

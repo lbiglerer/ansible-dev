@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for cmd in atop cat echo grep groups hostname htop ls nvidia-smi nvtop ps sacct sattach scancel scontrol sinfo sprio squeue sview top; do
+    if [[ ! -f /sci-it/compute-users/bin/$cmd && -x /usr/bin/$cmd ]]; then
+        ln -s /usr/bin/$cmd /sci-it/compute-users/bin/$cmd >/dev/null
+    fi
+done

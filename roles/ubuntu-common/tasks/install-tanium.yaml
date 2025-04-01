@@ -1,26 +1,25 @@
 ---
-- name: create install directory
-  ansible.builtin.file:
-    path: /tmp/tanium-install
-    state: directory
-    mode: '0755'
-
-- name: copy Tanium source
-  ansible.builtin.copy:
-     src: Tanium-7.6.2.1247_Ubuntu-24.04_install.tar
-     dest: /tmp/tanium-install
-
-- name: extract Tanium source
-  ansible.builtin.shell:
-    chdir: /tmp/tanium-install
-    cmd: tar xf ./Tanium-7.6.2.1247_Ubuntu-24.04_install.tar
-
-- name: install Tanium
-  ansible.builtin.shell:
-    chdir: /tmp/tanium-install
-    cmd: HOME=/tmp/tanium-install ./linux_install.sh -p taniumclient_7.6.2.1247-ubuntu24_amd64.deb -i tanium-init.dat -c CustomTags.txt
-
-- name: delete Tanium source
-  ansible.builtin.file:
-    path: /tmp/tanium-install
-    state: absent
+- name: (Tanium) install Tanium
+  when: "'taniumclient' not in ansible_facts.packages"
+  block:
+    - name: (Tanium) create install directory
+      ansible.builtin.file:
+        path: /tmp/tanium-install
+        state: directory
+        mode: '0755'
+    - name: (Tanium) copy source
+      ansible.builtin.copy:
+        src: Tanium-7.6.4.2121_Ubuntu-24.04_install.tar
+        dest: /tmp/tanium-install
+    - name: (Tanium) extract source
+      ansible.builtin.shell:
+        chdir: /tmp/tanium-install
+        cmd: tar xf ./Tanium-7.6.4.2121_Ubuntu-24.04_install.tar
+    - name: (Tanium) install package
+      ansible.builtin.shell:
+        chdir: /tmp/tanium-install
+        cmd: HOME=/tmp/tanium-install ./linux_install.sh -p taniumclient_7.6.4.2121-ubuntu24_amd64.deb -i tanium-init.dat -c CustomTags.txt
+    - name: (Tanium) delete source
+      ansible.builtin.file:
+        path: /tmp/tanium-install
+        state: absent

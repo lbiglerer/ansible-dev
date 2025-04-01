@@ -27,7 +27,7 @@
     register: rb
   - name: Reboot if required
     when: 
-      (rb.stat.exists and inventory_hostname not in groups["AdminServers"])
+      (rb.stat.exists and inventory_hostname not in groups["AdminHosts"])
     reboot: 
        msg: "Rebooting for required update; please save all work and log off now!"
        pre_reboot_delay: 300    # this is in seconds

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+#
+# check-kernel: this script will compare the running kernel to the latest available
+#               in /boot and if a newer kernel is available, it will create the
+#               /var/run/reboot-required file.
+#
+# Created by:  clake
+# Created on:  1/27/2025
+#
+
+###
+### Variables
+###
+verbose=false
+test=false
+IFS='' read -r -d '' usage <<"EOF"
+
+check-kernel: compare running/available kernels and update the file
+              /var/run/reboot-required if appropriate
+
+Usage:
+  reboot-hosts [ -h|--help ] [ -v|--verbose ]
+  reboot-hosts -t|--test 
+
+Arguments:
+  -h|--help        Show what you are seeing right now
+  -t|--test        Check for a kernel mismatch but don't update the
+                   /var/run/reboot-required file 
+  -v|--verbose     Show the kernel versions found
+EOF
+
+###
+### Process Args
+###
+while [[ $# -gt 0 ]]; do
+   case $1 in
+       -h|--help)
+           echo "$usage" && exit 0
+           ;;
+       -t|--test)
+           test=true
+           verbose=true
+           ;;
+       -v|--verbose)
+           verbose=true
+           ;;
+      *)
+           echo "ERROR: superfluous option $1" && exit 1
+           ;;
+   esac
+   shift
+done
+
+###
+### Needs to be run as root iff not run with the test flag
+###
+if [[ ${EUID} -ne 0 && "${test}" != true ]]; then
+   echo "ERROR: insufficient privileges (try sudo)"
+   exit 2
+fi
+
+###
+### Check kernel versions
+###
+HIGHEST_KERNEL=$(find /boot/vmlinuz-* | sort -V | tail -n 1 | sed 's|.*vmlinuz-||')
+RUNNING_KERNEL=$(uname -r)
+if [ "$HIGHEST_KERNEL" != "$RUNNING_KERNEL" ]; then
+   if [[ "${verbose}" = true ]]; then
+       echo "The running kernel ($RUNNING_KERNEL) != the lastest available kernel ($HIGHEST_KERNEL)."
+       echo "** Reboot Required **"
+       [[ "${test}" = true ]] && exit 0
+       echo "Updating /var/run/reboot-required..."
+   fi 
+   rebootmsg="*** Reboot Required *** check-kernel: new kernel available ($HIGHEST_KERNEL)"
+   # don't duplicate the message if run multiple times
+   if [ -f /var/run/reboot-required ]; then 
+       if grep -q "$rebootmsg" /var/run/reboot-required; then
+          # no match found 
+          echo "$rebootmsg" >> /var/run/reboot-required
+       else
+          # it's already there
+          exit 0
+       fi
+   else 
+       echo "$rebootmsg" > /var/run/reboot-required
+   fi
+else 
+   [[ "${verbose}" = true ]] && echo "The running kernel ($RUNNING_KERNEL) is the lastest available."
+fi

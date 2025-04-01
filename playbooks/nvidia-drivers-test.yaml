@@ -1,0 +1,11 @@
+---
+#
+# This playbook is to run the nvidia role without the site.yaml. 
+# This is for testing, and should not be called anywhere else.
+#
+- hosts: '{{ ansible_limit | default(omit) }}'
+  gather_facts: true
+  roles:
+    - role: nvidia
+      tags: nvidia-tag
+      when: ansible_distribution == 'Ubuntu'

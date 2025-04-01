@@ -1,0 +1,3 @@
+Defaults:%sci-it-sudo secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/sci-it/ansible/bin:/sci-it/sbin"
+Defaults:%sci-it-sudo env_keep += "HOME EDITOR PROMPT prompt SSH_AGENT_PID SSH_AUTH_SOCK"
+%sci-it ALL=(ALL) ALL

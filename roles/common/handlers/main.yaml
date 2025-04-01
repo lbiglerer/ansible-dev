@@ -1,60 +1,8 @@
----
-#
-# This defines the handlers used by the Ubuntu Ansible playbooks.
-#
-# Note that handlers are run IN THE ORDER THEY ARE DEFINED; restarting NIS has to
-# come prior to autofs so that any NIS changes are picked up by autofs
-#
-- name: restart NIS
-  ansible.builtin.systemd_service:
-    name: ypbind
-    state: restarted
-    enabled: true
 
-- name: reload autofs
-  ansible.builtin.systemd_service:
-    name: autofs
-    state: reloaded
-    enabled: true
+- name: reload sysctl-swappiness
+  ansible.builtin.shell:
+    cmd: /usr/sbin/sysctl -p /etc/sysctl.d/50-swappiness.conf
 
-- name: reload postfix
-  ansible.builtin.systemd_service:
-    name: postfix
-    state: reloaded
-    enabled: true
-
-- name: restart rsyslog
-  ansible.builtin.systemd_service:
-    name: rsyslog
-    state: restarted
-    enabled: true
-
-- name: restart sshd
-  ansible.builtin.systemd_service:
-    name: ssh
-    state: restarted
-    enabled: true
-
-- name: restart fail2ban
-  ansible.builtin.systemd_service:
-    name: fail2ban
-    state: restarted
-    enabled: true
-
-# This is needed as the sysctl builtin doesn't always do this
-- name: reload sysctl
-  ansible.builtin.shell: /usr/sbin/sysctl -p
-
-- name: restart apt-daily.timer
-  ansible.builtin.systemd_service:
-    name: apt-daily.timer
-    state: restarted
-    enabled: true
-    daemon_reload: true
-
-- name: restart apt-daily-upgrade.timer
-  ansible.builtin.systemd_service:
-    name: apt-daily-upgrade.timer
-    state: restarted
-    enabled: true
-    daemon_reload: true
+- name: reload sysctl-ipv6
+  ansible.builtin.shell:
+    cmd: /usr/sbin/sysctl -p /etc/sysctl.d/50-ipv6.conf

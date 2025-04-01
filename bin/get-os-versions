@@ -1,0 +1,113 @@
+#!/bin/bash
+# vim: filetype=sh
+#
+# get-os-versions
+#
+# This function will gather and display the versions of the OS each machine is running,
+# correctly and (hopefully) safely, by invoking the get-os-version playbook. 
+#
+# Created by: clake
+#
+# Created on: 06/05/2024
+#
+#
+
+###
+### Variables
+###
+# operational variables
+show_arg=""
+limit_arg=""
+IFS='' read -r -d '' usage <<"EOF"
+
+get-os-versions: Display the operating systems running on SCI hosts
+
+Usage: 
+  get-os-versions [-h|--help]
+  get-os-versions [-s|--show] <host|group>
+  
+Arguments: 
+  -h|--help        Show what you are seeing right now
+  -s|--show        Display the ansible command only
+  <host|group>     The target inventory group(s) or host(s)
+
+EOF
+
+
+
+###
+###Process Args
+###
+while [[ $# -gt 0 ]]; do
+   case $1 in
+       -h|--help)      
+           echo "$usage" && exit 0
+           ;;
+       -s|--show)      
+           show_arg="yes"
+           ;;
+       -*)             
+           echo "ERROR: unknown option $1" && return 1
+           ;;
+       *)              
+           if [[ -z "$limit_arg" ]]; then 
+              limit_arg="--limit $1"
+           else
+              echo "ERROR: superfluous option $1" && return 1
+           fi
+           ;;
+   esac
+   shift
+done
+
+
+
+###
+### Needs to be run as root
+###
+if [[ ${EUID} -ne 0 ]]; then
+   echo "ERROR: insufficient privileges (try sudo)"
+   exit 2
+fi
+
+
+
+###
+### Needs to have a specified target
+###
+if [[ "${limit_arg}" == "" ]]; then
+   echo "ERROR: Unspecified target groups/hosts"
+   exit 2
+fi
+
+
+
+###
+### Load the Ansible agent info
+###
+AGENTVARS=$( /sci-it/ansible/bin/ansible-agent -i )
+if [ $? -ne 0 ]; then
+   echo >&2 "ERROR: unable to contact the Ansible agent."
+   exit 1
+fi
+eval ${AGENTVARS}
+
+
+
+###
+### Run the ansible command
+###
+exec_command=$( echo "ANSIBLE_STDOUT_CALLBACK=ansible.posix.json /usr/bin/ansible-playbook ${limit_arg} /sci-it/ansible/playbooks/get-os-versions.yaml | jq '.plays[0].tasks[1].hosts[].msg' | sed 's:\"::g' | sort" | sed 's/ \+/ /g' )
+# Show or run the command
+if [ ! -z "${show_arg}" ]; then
+   echo "${exec_command}"
+else
+   # When using --limit, Ansible still shows the full default host range in the "PLAY" section, which can be 
+   # worrisome when you're running a command with sudo privs. At least here we can indicate that we are indeed 
+   # limiting the run as the user specified on the command line
+   if [ ! -z "${limit_arg}" ]; then
+      echo "Limiting scope to:" $( echo ${limit_arg} | awk '{ print $2 }' )
+   fi
+   # eval ${exec_command} | grep "msg\":" | sed 's/\"//g' | awk '{ print $3, $4, $2 }' | sort -k 1,2
+   eval ${exec_command} 
+fi

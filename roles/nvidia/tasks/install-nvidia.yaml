@@ -1,0 +1,23 @@
+---
+- name: Install CUDA keyring
+  apt:
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+  register: cuda_keyring_install
+  when: "'cuda-keyring' not in ansible_facts.packages"
+  notify: nvidia update apt cache
+
+- name: Force handler execution after keyring installation
+  meta: flush_handlers
+  when: cuda_keyring_install.changed
+
+- name: Install NVIDIA drivers via ubuntu-drivers
+  command: ubuntu-drivers install
+
+- name: Install CUDA toolkit and nvtop
+  ansible.builtin.apt:
+    name:
+      - nvidia-cuda-toolkit
+      - cuda-toolkit
+      - nvtop
+    state: present
+    

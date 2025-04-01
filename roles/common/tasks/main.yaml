@@ -9,11 +9,10 @@
   ansible.builtin.timezone:
     name: America/Denver
 
-- name: Configure /etc/hosts
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    state: absent
-    regexp: '^127.0.1.1'
+- name: Generate /etc/hosts
+  template:
+    src=templates/hosts.j2
+    dest=/etc/hosts
 
 - name: Configure /etc/passwd for it-users
   ansible.builtin.lineinfile:
@@ -22,13 +21,6 @@
     state: present
     insertbefore: "::::::"
 
-- name: Configure /etc/passwd for general login
-  ansible.builtin.lineinfile:
-    path: /etc/passwd
-    line: "+::::::/usr/sbin/nologin"
-    state: present
-    insertafter: EOF
-
 - name: Configure /etc/group
   ansible.builtin.lineinfile:
     path: /etc/group
@@ -36,17 +28,23 @@
     state: present
     insertafter: EOF
 
-- name: create sci-it group
-  ansible.builtin.group:
-    name: sci-it
-    gid: 900
-    state: present
+- name: Configure swappiness
+  when: inventory_hostname not in groups["StarfishHosts"] and inventory_hostname not in groups["Desktops"]
+  ansible.builtin.copy:
+    src: "files/sysctl/50-swappiness.conf"
+    dest: /etc/sysctl.d/50-swappiness.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload sysctl-swappiness
 
-- name: create sci-it user
-  ansible.builtin.user:
-    name: sci-it
-    uid: 900
-    group: sci-it
-    home: /
-    create_home: false
-    password: $y$j9T$URR7df8/.kIUyaldpJNHK0$eVfK7Xx/cFmo4R1eYCux4rC3Cn9eD8VkC.pzlm7YxW9
+- name: Configure ipv6
+  ansible.builtin.copy:
+    src: "files/sysctl/50-ipv6.conf"
+    dest: /etc/sysctl.d/50-ipv6.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload sysctl-ipv6
+  
+  

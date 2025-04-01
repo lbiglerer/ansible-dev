@@ -1,0 +1,269 @@
+#!/bin/bash
+# vim: filetype=sh
+# 
+# ansible agent
+#
+# This script starts up a version of ssh-agent that will be used by Ansible, and add 
+# the appropriate identity. It is meant to be run as root and is meant to be idempotent. 
+#
+# Created by: clake
+#
+# Created on: 06/05/2024
+#
+# Modifications:
+#
+
+
+###
+### Variables
+###
+# configuration variables
+SSH_KEY=/sci-it/.passwd/sci-it
+ANSIBLE_AGENT_FILE=/sci-it/ansible/etc/agent_info.$(hostname -s)
+
+# operational variables
+CHECK=0
+INFO=0
+KILL=0
+NRPE=0
+ERR_PREFIX="ERROR:"
+# let's kill any inherited agent vars, just in case
+SSH_AGENT_PID=
+SSH_AUTH_SOCK=
+IFS='' read -r -d '' usage <<"EOF"
+
+ansible_agent - start up ssh-agent for use by Ansible
+
+Usage: 
+ansible_agent -h|--help 
+ansible_agent -i|--info
+ansible_agent -f 
+ansible_agent [ -c|--check ] [ -k|--kill ] [ -n|--nrpe ]
+
+Arguments: 
+  -c|--check     Don't start an agent, just report on agent health
+  -f|--file      Show the ansible file being used
+  -h|--help      Show what you see here
+  -i|--info      Return the agent's env vars (appropriate to source)
+  -k|--kill      Kill off any existing agent
+  -n|--nrpe      Same as --check, but output/exit status is tailored
+                 to be consumed by NRPE.
+EOF
+
+
+
+### 
+### Process Args
+###
+while [[ $# -gt 0 ]]; do
+   case $1 in
+     -c|--check)
+        CHECK=1
+        ;;
+     -f|--file)
+        echo ${ANSIBLE_AGENT_FILE} && exit
+        ;;
+     -h|--help)
+        echo "$usage" && exit 0
+        ;;
+     -i|--info)
+        INFO=1
+        ;;
+     -k|--kill)
+        KILL=1
+        ;;
+     -n|--nrpe)
+        # all NRPE errors should be crits
+        ERR_PREFIX="CRITICAL -"
+        NRPE=1
+        ;;
+     *)
+        echo "Unknown argument: $1" && exit 1
+        ;;
+   esac
+   shift
+done
+
+
+
+###
+### Return agent info if asked for it
+###
+if [[ ${INFO} -ne 0 ]]; then
+   
+   # check the file
+   if [ ! -r $ANSIBLE_AGENT_FILE ]; then
+      echo "ERROR: unable to read agent file"
+      exit 1
+   fi
+      
+   # get the two vars
+   SSH_AGENT_PID=$( grep SSH_AGENT_PID $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   SSH_AUTH_SOCK=$( grep SSH_AUTH_SOCK $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   echo "SSH_AGENT_PID=${SSH_AGENT_PID}; export SSH_AGENT_PID"
+   echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}; export SSH_AUTH_SOCK"
+   exit 0
+
+fi
+
+ 
+
+###
+### Root needed for anything we will be doing
+### beyond here
+###
+if [[ ${EUID} -ne 0 ]]; then
+   echo -n "${ERR_PREFIX} insufficient privileges"
+   [[ ${NRPE} -eq 0 ]] && echo -n " (try sudo)"
+   echo
+   exit 2
+fi
+
+
+
+###
+### Check if agent exists, if not, start one up
+###
+# 
+# Note: this block should end with both SSH_AUTH_SOCK and SSH_AGENT_PID set
+if [ -r $ANSIBLE_AGENT_FILE ]; then
+
+   ## Agent file exists
+
+   # See if agent is running- this isn't perfect but likely good enough
+   SSH_AGENT_PID=$( grep SSH_AGENT_PID $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   SSH_AUTH_SOCK=$( grep SSH_AUTH_SOCK $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   export SSH_AGENT_PID
+   export SSH_AUTH_SOCK
+
+   if [ "$( ps -ef | grep -v grep | grep $SSH_AGENT_PID | grep 'ssh-agent$' )" == "" ]; then
+  
+      ## Agent file exists but agent is not running
+
+      # Error out if checking for agent health
+      if [[ ${CHECK} -ne 0 ]]; then 
+         echo "${ERR_PREFIX} Ansible agent not running"
+         exit 2
+      fi
+
+      # Nothing to do if kill mode on but clean up superfluous agent file
+      if [[ ${KILL} -ne 0 ]]; then
+         echo "Agent not running"
+         echo "Removing superfluous agent file" 
+         rm -v $ANSIBLE_AGENT_FILE && exit 0
+         echo "ERROR: unable to remove agent file" 
+         exit 2
+      fi 
+         
+      # start the agent 
+      echo "Ignoring non-existent agent (PID $SSH_AGENT_PID) in $ANSIBLE_AGENT_FILE"
+      echo "Starting agent and creating $ANSIBLE_AGENT_FILE"
+      ssh-agent > $ANSIBLE_AGENT_FILE 
+      if [ $? -ne 0 ]; then
+         echo "ERROR: unable to start agent"
+         exit 1
+      fi
+      # reset the agent vars
+      SSH_AGENT_PID=$( grep SSH_AGENT_PID $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+      SSH_AUTH_SOCK=$( grep SSH_AUTH_SOCK $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+      export SSH_AGENT_PID
+      export SSH_AUTH_SOCK
+
+   else 
+   
+      ## Agent file exists and agent is running
+
+      # Exterminate with extreme predjudice
+      if [[ ${KILL} -ne 0 ]]; then
+         # kill agent
+         echo "Killing off agent (PID $SSH_AGENT_PID)"
+         ssh-agent -k && rm -v $ANSIBLE_AGENT_FILE && exit 0
+         echo "ERROR: unable to kill agent (PID $SSH_AGENT_PID) and/or remove agent file"
+         exit 2
+      fi 
+
+      # it's there, continue on to check for key
+      [[ ${CHECK} -eq 0 ]] && echo "Agent found with PID $SSH_AGENT_PID"
+
+   fi
+
+   ## Fall through to look to see if the key is loaded
+ 
+else
+
+   ## Agent file isn't readable
+
+   # error out if check mode on
+   if [[ ${CHECK} -ne 0 ]]; then
+      echo "${ERR_PREFIX} Unable to read Ansible agent file"
+      exit 2
+   fi
+   
+   # Can't kill something we can't find
+   if [[ ${KILL} -ne 0 ]]; then
+      echo "No agent found"
+      exit 0
+   fi
+
+   # Agent not running- start one up and put its info into the agent file
+   echo "Starting agent and creating $ANSIBLE_AGENT_FILE"
+   ssh-agent > $ANSIBLE_AGENT_FILE && chmod 644 $ANSIBLE_AGENT_FILE
+   if [ $? -ne 0 ]; then
+      echo "${ERR_PREFIX} unable to start agent"
+      exit 1
+   fi
+   SSH_AGENT_PID=$( grep SSH_AGENT_PID $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   SSH_AUTH_SOCK=$( grep SSH_AUTH_SOCK $ANSIBLE_AGENT_FILE | sed 's/;.*//' | awk -F= '{ print $2 }' )
+   export SSH_AGENT_PID
+   export SSH_AUTH_SOCK
+
+fi
+
+
+###
+### Make sure the Ansible key is loaded
+###
+SSH_KEY=$( eval echo $SSH_KEY )   # get file expansion
+fp=$( ssh-keygen -l -f $SSH_KEY )
+
+# check to see if the key is already there
+idlist=$( ssh-add -l )
+if [[ $idlist != *"$fp"* ]]; then
+
+   # error out if check mode on
+   if [[ ${CHECK} -ne 0 ]]; then
+      echo "${ERR_PREFIX} Ansible agent is missing key"
+      exit 2
+   fi
+
+   # add it in, since it is not there
+   echo "Adding $SSH_KEY"
+   ssh-add $SSH_KEY
+
+   # Validate key now exists in agent
+   idlist=$( ssh-add -l 2>&1 )
+   if [[ $idlist != *"$fp"* ]]; then
+      echo "${ERR_PREFIX} ssh key not loaded"
+      exit 2
+   fi 
+   echo "Key loaded successfully"
+   exit 0
+
+else
+
+   if [[ ${CHECK} -ne 0 ]]; then
+      [[ ${NRPE} -ne 0 ]] && echo -n "OK - "
+      echo "Ansible agent in healthy state"
+   else 
+      echo "Key already exists in agent"
+   fi
+   exit 0
+
+fi
+
+
+# We should never get here
+if [[ ${CHECK} -ne 0 ]]; then
+   echo "${ERR_PREFIX} functional error in script"
+   exit 2
+fi

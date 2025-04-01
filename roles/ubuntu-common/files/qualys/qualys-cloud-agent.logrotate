@@ -1,0 +1,12 @@
+/var/log/qualys/* {
+    create 0600 root root
+    rotate 4
+    monthly
+    copytruncate
+    compress
+    nodelaycompress
+    missingok
+    lastaction
+       systemctl restart qualys-cloud-agent
+    endscript
+}

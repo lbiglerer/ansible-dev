@@ -1,0 +1,40 @@
+#!/bin/bash
+# vim: filetype=sh
+#
+# post-receive
+#
+# This script is responsible for responding to commits to the main branch
+# of this repo by deploying the updated main branch into its production
+# directory as well as copying and updated post-receive-hook into place
+# (i.e. update itself).
+#
+# Created by: clake
+#
+# Created on: 11/06/2024
+#
+# Modifications:
+#
+#
+###
+### Variables
+###
+# the production directory
+TARGET="/sci-it/ansible"
+# the bare repo dir
+GIT_DIR="$TARGET/.git"
+
+# deploy to the target directory
+while read oldrev newrev ref; do
+    BRANCH=$(git rev-parse --symbolic --abbrev-ref $ref)
+    if [[ $BRANCH == "main" ]]; then
+        echo "Deploying branch ${BRANCH} to production..."
+        # deploy to our target directory.
+        git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f $BRANCH
+    fi
+done
+
+# Make sure perms are set okay
+echo "setting group to sci-it..."
+find $TARGET -mindepth 1 -path $TARGET/.git -prune -o -exec chgrp sci-it {} \; 2>/dev/null
+echo "setting perms..."
+find $TARGET -mindepth 1 -path $TARGET/.git -prune -o -exec chmod g+w {} \; 2>/dev/null

@@ -1,0 +1,129 @@
+#!/bin/bash
+# vim: filetype=sh
+#
+# reboot-if-needed
+#
+# This function will check to see what hosts are waiting for a reboot (usually after
+# a kernel update), and if specified, will initiate a reboot on the host. This does
+# so correctly and (hopefully) safely, by invoking the reboot-if-needed Ansible playbook. 
+#
+# This depends on the ansible-agent being running and the env vars available 
+# the agent file
+#
+# Created by: clake
+#
+# Created on: 06/08/2024
+#
+# Modifications:
+#
+#
+#
+
+###
+### Variables
+###
+# operational variables - don't change
+show_arg=
+limit_arg=""
+json_arg=
+check_arg="--check"
+IFS='' read -r -d '' usage <<"EOF"
+
+reboot-if-needed: Ensure all standard packages are installed on SCI hosts
+
+Usage: 
+  reboot-if-needed [ -h|--help ]
+  reboot-if-needed [ -j|--json ] [ -s|--show ] [ -x|--execute ] <host|group>
+  
+Arguments: 
+  -h|--help        Show what you are seeing right now
+  -j|--json        Output in json format
+  -s|--show        Display the ansible command only
+  -x|--execute     Actually execute the command (default is just check for changes)
+  <host|group>     The target inventory group(s) or host(s)
+
+EOF
+
+
+
+###
+### Process Args
+###
+while [[ $# -gt 0 ]]; do
+   case $1 in
+       -h|--help)      
+           echo "$usage" && exit 0
+           ;;
+       -j|--json)      
+           json_arg=1
+           ;;
+       -s|--show)      
+           show_arg=1
+           ;;
+       -x|--execute)   
+           check_arg=""
+           ;;
+       -*)             
+           echo "ERROR: unknown option $1" && exit 1
+           ;;
+       *)              
+           if [[ -z "$limit_arg" ]]; then 
+              limit_arg="--limit $1"
+           else
+              echo "ERROR: superfluous option $1" && exit 1
+           fi
+           ;;
+   esac
+   shift
+done
+
+
+
+###
+### Needs to be run as root
+###
+if [[ ${EUID} -ne 0 ]]; then
+   echo "ERROR: insufficient privileges (try sudo)"
+   exit 2
+fi
+
+
+
+###
+### Needs to have a specified target
+###
+if [[ "${limit_arg}" == "" ]]; then
+   echo "ERROR: Unspecified target groups/hosts"
+   exit 2
+fi
+
+
+###
+### Load the Ansible agent info
+###
+AGENTVARS=$( /sci-it/ansible/bin/ansible-agent -i )
+if [ $? -ne 0 ]; then
+   echo >&2 "ERROR: unable to contact the Ansible agent."
+   exit 1
+fi
+eval ${AGENTVARS}
+
+
+
+###
+### Run the ansible command
+###
+exec_command=$( echo "/usr/bin/ansible-playbook ${check_arg} ${diff_arg} ${limit_arg} /sci-it/ansible/playbooks/reboot-if-needed.yaml" | sed 's/ \+/ /g' )
+[ ! -z "${json_arg}" ] && exec_command=$( echo "ANSIBLE_STDOUT_CALLBACK=ansible.posix.json $exec_command" )
+# Show or run the command
+if [ ! -z "${show_arg}" ]; then
+   echo "${exec_command}"
+else
+   # When using --limit, Ansible still shows the full default host range in the "PLAY" section, which can be 
+   # worrisome when you're running a command with sudo privs. At least here we can indicate that we are indeed 
+   # limiting the run as the user specified on the command line (but don't if they expect JSON output)
+   if [[ ! -z "${limit_arg}" && -z "${json_arg}" ]]; then
+      echo "Limiting scope to:" $( echo ${limit_arg} | awk '{ print $2 }' )
+   fi
+   eval ${exec_command} 
+fi

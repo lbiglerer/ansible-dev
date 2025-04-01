@@ -1,0 +1,35 @@
+---
+- name: (Qualys) install package file
+  when: inventory_hostname not in groups["ComputeServers"] and 'qualys-cloud-agent' not in ansible_facts.packages
+  block:
+    - name: (Qualys) copy file to host
+      ansible.builtin.copy:
+        src: qualys/QualysCloudAgent.6.3.0-67.deb
+        dest: /tmp
+    - name: (Qualys) install deb file
+      ansible.builtin.apt:
+        deb: /tmp/QualysCloudAgent.6.3.0-67.deb
+      when: not ansible_check_mode
+    - name: (Qualys) delete deb file
+      ansible.builtin.file:
+        path: /tmp/QualysCloudAgent.6.3.0-67.deb
+        state: absent
+    - name: (Qualys) register new agent
+      ansible.builtin.shell:
+        chdir: /tmp
+        cmd: /usr/local/qualys/cloud-agent/bin/qualys-cloud-agent.sh ActivationId=1821b3a2-f6e6-461d-a9ee-ac95be686401 CustomerId=9c0e25e1-0b18-5af6-e040-10ac13043f6a ServerUri=https://qagpublic.qg1.apps.qualys.com/CloudAgent/
+
+- name: (Qualys) copy override file
+  when: inventory_hostname not in groups["ComputeServers"]
+  block:
+    - name: (Qualys) copy override file
+      ansible.builtin.copy:
+        src: qualys/override.conf
+        dest: /etc/systemd/system/qualys-cloud-agent.service.d/
+      notify: restart QualysCloudAgent
+
+- name: (Qualys) configure log rotation
+  when: inventory_hostname not in groups["ComputeServers"]
+  ansible.builtin.copy:
+    src: qualys/qualys-cloud-agent.logrotate
+    dest: /etc/logrotate.d/qualys-cloud-agent

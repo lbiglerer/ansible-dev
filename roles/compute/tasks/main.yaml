@@ -1,0 +1,144 @@
+---
+- name: (compute server) install prereq packages
+  ansible.builtin.apt:
+    state: latest
+    autoremove: true
+    name:
+      - libpmix-dev
+      - libpmix-bin
+      - libpmix2t64
+      - munge
+      - python3-pmix
+
+- name: (compute server) set up necessary directories
+  block:
+    - name: (compute server) configure log directory
+      ansible.builtin.file:
+        path: /var/log/slurm
+        state: directory
+        owner: slurm
+        mode: '0755'
+    - name: (compute server) configure lib directory
+      ansible.builtin.file:
+        path: /var/lib/slurm
+        state: directory
+        owner: slurm
+        mode: '0755'
+    - name: configure lib/slurm directory
+      ansible.builtin.file:
+        path: /var/lib/slurm/slurmd
+        state: directory
+        owner: slurm
+        mode: '0755'
+
+- name: (compute server) configure log rotation
+  ansible.builtin.copy:
+    src: files/slurm.logrotate
+    dest: /etc/logrotate.d/slurm
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: (compute server) install Slurm base package 
+  when: "'slurm-smd' not in ansible_facts.packages"
+  block:
+    - name: (compute server) copy base pkg to host
+      ansible.builtin.copy:
+        src: files/slurm-smd_24.11.0-1_amd64.deb
+        dest: /tmp
+    - name: (compute server) install base pkg 
+      ansible.builtin.apt:
+        deb: /tmp/slurm-smd_24.11.0-1_amd64.deb
+      when: not ansible_check_mode
+    - name: (compute server) delete base pkg file
+      ansible.builtin.file:
+        path: /tmp/slurm-smd_24.11.0-1_amd64.deb
+        state: absent
+
+- name: (compute server) install Slurm client package 
+  when: "'slurm-smd-client' not in ansible_facts.packages"
+  block:
+    - name: (compute server) copy client pkg to host
+      ansible.builtin.copy:
+        src: files/slurm-smd-client_24.11.0-1_amd64.deb
+        dest: /tmp
+    - name: (compute server) install client pkg 
+      ansible.builtin.apt:
+        deb: /tmp/slurm-smd-client_24.11.0-1_amd64.deb
+      when: not ansible_check_mode
+    - name: (compute server) delete client pkg file
+      ansible.builtin.file:
+        path: /tmp/slurm-smd-client_24.11.0-1_amd64.deb
+        state: absent
+
+- name: (compute server) install Slurm slurmd package 
+  when: "'slurm-smd-slurmd' not in ansible_facts.packages"
+  block:
+    - name: (compute server) copy slurmd pkg to host
+      ansible.builtin.copy:
+        src: files/slurm-smd-slurmd_24.11.0-1_amd64.deb
+        dest: /tmp
+    - name: (compute server) install slurmd pkg 
+      ansible.builtin.apt:
+        deb: /tmp/slurm-smd-slurmd_24.11.0-1_amd64.deb
+      when: not ansible_check_mode
+    - name: (compute server) delete base slurmd file
+      ansible.builtin.file:
+        path: /tmp/slurm-smd-slurmd_24.11.0-1_amd64.deb
+        state: absent
+
+- name: (compute server) add ypbind as pre-req for munge startup
+  ansible.builtin.lineinfile:
+    path: /usr/lib/systemd/system/munge.service
+    line: "After=ypbind.service"
+    state: present
+    insertafter: "After=time-sync.target"
+  notify: systemctl daemon reload
+
+- name: (compute server) create restricted shell environment
+  block:
+    - name: (compute server) make directory structure
+      ansible.builtin.file:
+        path: /sci-it/bin
+        state: directory
+        mode: '0755'
+    - name: (compute server) install shell
+      ansible.builtin.copy:
+        src: files/compute-users.sh
+        dest: /sci-it/bin/compute-users.sh
+        owner: root
+        group: root
+        mode: '0755'
+    - name: (compute server) install make-cu-commands
+      ansible.builtin.copy:
+        src: files/make-cu-commands
+        dest: /sci-it/bin/make-cu-commands
+        owner: root
+        group: root
+        mode: '0755'
+
+- name: (compute server) create compute-users home
+  block:
+    - name: (compute-users) make directory structure
+      ansible.builtin.file:
+        path: /sci-it/compute-users/bin
+        state: directory
+        mode: '0755'
+    - name: (compute-users) create command links
+      ansible.builtin.shell: /sci-it/bin/make-cu-commands
+
+- name: (compute server) set up sshd for compute-users
+  ansible.builtin.copy:
+    src: files/compute-users.sshd.conf
+    dest: /etc/ssh/sshd_config.d/compute-users.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart sshd
+
+- name: (compute server) enable compute-users login
+  ansible.builtin.lineinfile:
+    path: /etc/passwd
+    line: "+@compute-users::0:0:::"
+    state: present
+    insertafter: "it-users"

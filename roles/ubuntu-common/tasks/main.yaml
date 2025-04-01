@@ -1,10 +1,33 @@
 ---
+- name: Install Ubuntu base packages
+  ansible.builtin.import_tasks: install-base-packages.yaml
+
+- name: Install Ubuntu generic config files
+  ansible.builtin.import_tasks: install-config-files.yaml
+
 - name: Install ubuntu-pro
   ansible.builtin.import_tasks: install-pro.yaml
 
-- name: Disable unattended upgrades
-  ansible.builtin.import_tasks: disable-unattended-upgrades.yaml
+- name: Configure APT
+  ansible.builtin.import_tasks: apt.yaml
   when: selfadmin is not defined
 
-- name: Run install-tanium
+- ansible.builtin.import_tasks: autofs.yaml
+  when: selfadmin is not defined
+
+- ansible.builtin.import_tasks: fail2ban.yaml
+
+- name: Install NRPE (nagios)
+  when: inventory_hostname in lookup('inventory_hostnames', 'Servers:Wormulon:Spartacus')
+  ansible.builtin.import_tasks: nrpe.yaml
+
+- name: Get details about installed packages
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Install Tanium client
   ansible.builtin.import_tasks: install-tanium.yaml
+
+# Disabling qualys agent while home directory mounts still be debugged
+- name: Install Qualys agent
+  ansible.builtin.import_tasks: install-qualys.yaml

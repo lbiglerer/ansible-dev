@@ -1,30 +1,31 @@
 ---
-- name: Check if CUDA keyring is installed
-  stat:
-    path: /usr/share/keyrings/cuda-archive-keyring.gpg
-  register: cuda_keyring_check
+- name: Check NVIDIA hardware and modules for installation status
+  block:
+    - name: Check for NVIDIA hardware
+      shell: lspci | grep -i -q nvidia
+      register: nvidia_lspci_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Check for NVIDIA kernel modules
+      shell: lsmod | grep -q nvidia
+      register: nvidia_modules_check
+      ignore_errors: true
+      changed_when: false
+      when: nvidia_lspci_check.rc == 0
+
+- name: Install NVIDIA components
+  include_tasks: install-nvidia.yaml
+  when: nvidia_lspci_check.rc == 0 and nvidia_modules_check.rc|default(0) != 0
+
+- name: Notify if NVIDIA drivers are already installed
+  debug:
+    msg: "NVIDIA drivers are already installed. Skipping automatic installation."
+  when: nvidia_lspci_check.rc == 0 and nvidia_modules_check.rc|default(0) == 0
   changed_when: false
 
-- name: Set fact for CUDA keyring installation status
-  set_fact:
-    cuda_keyring_installed: "{{ cuda_keyring_check.stat.exists }}"
-    
-- name: Install CUDA Keyring
-  apt:
-    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
-  when: not (cuda_keyring_installed is defined and cuda_keyring_installed)
-
-- name: Update apt cache
-  apt:
-    update_cache: yes
-
-- name: Install NVIDIA drivers (using ubuntu-drivers)
-  command: ubuntu-drivers install
-
-- name: Install CUDA toolkit and nvtop
-  apt:
-    name:
-      - nvidia-cuda-toolkit
-      - cuda-toolkit
-      - nvtop
-    state: latest
+- name: Notify if NVIDIA hardware is not present
+  debug:
+    msg: "No NVIDIA hardware detected. Skipping automatic installation."
+  when: nvidia_lspci_check.rc != 0
+  changed_when: false

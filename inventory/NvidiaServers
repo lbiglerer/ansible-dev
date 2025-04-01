@@ -1,7 +1,6 @@
 #
-# NvidiaServers - boxes that due to their sensitive nature are not included in 
-#              regular updates
+# NvidiaServers - Inventory file for Nvidia servers to . 
+#              install the Nvidia GPU driver and CUDA toolkit.
 #
 [NvidiaServers]
 murray
-xuanhuang

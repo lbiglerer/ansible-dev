@@ -1,0 +1,121 @@
+#!/bin/bash
+# vim: filetype=sh
+#
+# install-base-pkgs
+#
+# This function will ensure that all base packages are installed via the OS,
+# correctly and (hopefully) safely, by invoking the install-base-pkgs Ansible playbook. 
+#
+# This depends on the ansible-agent being running and the env vars available 
+# the agent file.
+#
+
+###
+### Variables
+###
+# operational variables - don't change
+show_commands=false
+limit_arg=""
+show_diff=false
+output_json=false
+perform_installs=false
+IFS='' read -r -d '' usage <<"EOF"
+
+install-base-pkgs: ensure all standard packages are installed on SCI hosts
+
+Usage: 
+  install-base-pkgs [ -h|--help ]
+  install-base-pkgs [ -d|--diff ] [ -s|--show ] [ -x|--execute ] 
+                    [ -j|--json ] <host|group> 
+  
+Arguments: 
+  -d|--diff        Show the details of the changes that will/would be done
+  -h|--help        Show what you are seeing right now
+  -j|--json        Output in JSON format
+  -s|--show        Display the ansible command only
+  -x|--execute     Actually execute the command (default is just check for changes)
+  <host|group>     The target inventory group(s) or host(s)
+
+EOF
+  
+###
+### Process Args
+###
+while [[ $# -gt 0 ]]; do
+   case $1 in
+       -d|--diff)      
+           show_diff=true
+           ;;
+       -h|--help)      
+           echo "$usage" && exit 0
+           ;;
+       -j|--json)      
+           output_json=true
+           ;;
+       -s|--show)      
+           show_commands=true
+           ;;
+       -x|--execute)   
+           perform_installs=true
+           ;;
+       -*)             
+           echo "ERROR: unknown option $1" && exit 1
+           ;;
+       *)              
+           if [[ -z "$limit_arg" ]]; then 
+              limit_arg="--limit $1"
+           else
+              echo "ERROR: superfluous option $1" && exit 1
+           fi
+           ;;
+   esac
+   shift
+done
+
+###
+### Needs to be run as root
+###
+if [[ ${EUID} -ne 0 ]]; then
+   echo "ERROR: insufficient privileges (try sudo)"
+   exit 2
+fi
+
+###
+### Needs to have a specified target
+###
+if [[ "${limit_arg}" == "" ]]; then
+   echo "ERROR: Unspecified target groups/hosts"
+   exit 2
+fi
+[[ ${limit_arg} =~ "SelfAdminHosts" ]] || limit_arg+=",!SelfAdminHosts"
+
+###
+### Load the Ansible agent info
+###
+AGENTVARS=$( /sci-it/ansible/bin/ansible-agent -i )
+if [ $? -ne 0 ]; then
+   echo >&2 "ERROR: unable to contact the Ansible agent."
+   exit 1
+fi
+eval ${AGENTVARS}
+
+###
+### Run the ansible command
+args=""
+exec_command=""
+[[ "${perform_installs}" != true ]] && args+="--check "
+[[ "${show_diff}" = true ]] && args+="--diff"
+[[ "${output_json}" = true ]] && exec_command+="ANSIBLE_STDOUT_CALLBACK=ansible.posix.json "
+exec_command+="/usr/bin/ansible-playbook ${limit_arg} ${args} /sci-it/ansible/playbooks/install-base-packages.yaml"
+exec_command=$(echo $exec_command | sed 's/ \+/ /g')
+# Show or run the command
+if [[ "${show_commands}" = true ]]; then
+    echo "${exec_command}"
+else
+    eval ${exec_command}
+fi 
+
+###
+### See ya
+###
+exit 0
