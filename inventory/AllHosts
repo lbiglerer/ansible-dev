@@ -1,0 +1,6 @@
+#
+# NvidiaServers - Inventory file for Nvidia servers to . 
+#              install the Nvidia GPU driver and CUDA toolkit.
+#
+[NvidiaServers]
+murray
