@@ -1,0 +1,6 @@
+#
+# LogServers - machines that have a custom logging environment and will therefore not have
+#              the standard configuration installed
+#
+[LogServers]
+

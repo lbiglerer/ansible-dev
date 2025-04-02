@@ -1,0 +1,24 @@
+#
+# ComputeServers - boxes that should have the Slurm environment installed and configured so 
+#                  that it can be used as a compute resource
+#
+[ComputeServers]
+
+
+[ComputeServers:children]
+
+
+[Spartacus]
+
+
+[Wormulon]
+
+
+[CEGCompute]
+
+
+[CIBCCompute]
+
+
+[TolgaLabCompute]
+

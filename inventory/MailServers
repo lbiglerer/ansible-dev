@@ -1,0 +1,6 @@
+#
+# MailServers - these have a custom mail environment so will not have the standard configuration
+#               installed
+#
+[MailServers]
+

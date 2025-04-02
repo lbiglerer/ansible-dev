@@ -1,0 +1,5 @@
+#
+# SSHGatewayServers - machines that have open ssh to the internet
+#
+[SSHGatewayServers]
+

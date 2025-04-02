@@ -1,0 +1,6 @@
+#
+# Canaries - hosts that should be upgrades on the Canary schedule (i.e. prior to
+#            all other hosts getting the same upgrade/updates)
+#
+[Canaries]
+
