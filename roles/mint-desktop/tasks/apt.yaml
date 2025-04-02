@@ -1,9 +1,9 @@
 ---
 - name: (APT) Set repository to local KSoC mirror
-  ansible.builtin.lineinfile:
+  ansible.builtin.replace:
     path: /etc/apt/sources.list.d/official-package-repositories.list
-    regexp: "^URIs: http://us.archive.ubuntu.com/ubuntu/$"
-    line: "URIs: http://ubuntu.cs.utah.edu/ubuntu/"
+    regexp: "^deb http://us.archive.ubuntu.com/ubuntu$"
+    replace: "deb http://ubuntu.cs.utah.edu/ubuntu"
   notify: update apt cache
 
 # - name: (APT) Set phased upgrade key
