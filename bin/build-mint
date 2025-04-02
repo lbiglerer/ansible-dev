@@ -130,7 +130,7 @@ eval ${AGENTVARS}
 ###
 ### Run the ansible command to configure the box
 ###
-exec_command=$( echo "/usr/bin/ansible-playbook --limit ${host} ${ansible_extra_vars} /home/sci/lbigler/ansible-dev/playbooks/mint-bypass-site" | sed 's/ \+/ /g' )
+exec_command=$( echo "/usr/bin/ansible-playbook --limit ${host} ${ansible_extra_vars} /home/sci/lbigler/ansible-dev/playbooks/mint-bypass-site.yaml" | sed 's/ \+/ /g' )
 [ ! -z "${json_arg}" ] && exec_command=$( echo "ANSIBLE_STDOUT_CALLBACK=ansible.posix.json $exec_command" )
 # Show or run the command
 if [ ! -z "${show_arg}" ]; then
