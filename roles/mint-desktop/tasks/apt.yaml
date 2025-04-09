@@ -13,6 +13,9 @@
     replace: 'deb https://mirrors.xmission.com/linuxmint'
   notify: update apt cache
 
+- name: Force handler execution after apt changes
+  meta: flush_handlers  
+
 # - name: (APT) Set phased upgrade key
 #   ansible.builtin.lineinfile:
 #     path: /etc/apt/apt.conf.d/20phased-updates

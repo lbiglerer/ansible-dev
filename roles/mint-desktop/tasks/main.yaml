@@ -2,15 +2,15 @@
 - name: Install Ubuntu base packages
   ansible.builtin.import_tasks: install-base-packages.yaml
 
+- name: Configure APT
+  ansible.builtin.import_tasks: apt.yaml
+  when: selfadmin is not defined
+
 - name: Install Ubuntu generic config files
   ansible.builtin.import_tasks: install-config-files.yaml
 
 # - name: Install ubuntu-pro
 #   ansible.builtin.import_tasks: install-pro.yaml
-
-- name: Configure APT
-  ansible.builtin.import_tasks: apt.yaml
-  when: selfadmin is not defined
 
 - ansible.builtin.import_tasks: autofs.yaml
   when: selfadmin is not defined
