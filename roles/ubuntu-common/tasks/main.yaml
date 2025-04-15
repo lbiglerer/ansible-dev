@@ -25,9 +25,9 @@
   ansible.builtin.package_facts:
     manager: apt
 
-- name: Install Tanium client
-  ansible.builtin.import_tasks: install-tanium.yaml
+# - name: Install Tanium client
+#   ansible.builtin.import_tasks: install-tanium.yaml
 
 # Disabling qualys agent while home directory mounts still be debugged
-- name: Install Qualys agent
-  ansible.builtin.import_tasks: install-qualys.yaml
+# - name: Install Qualys agent
+#   ansible.builtin.import_tasks: install-qualys.yaml

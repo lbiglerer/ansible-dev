@@ -4,66 +4,19 @@
     path: /etc/apt/sources.list.d/official-package-repositories.list
     regexp: '^deb\s+http:\/\/archive\.ubuntu\.com\/ubuntu'
     replace: 'deb http://ubuntu.cs.utah.edu/ubuntu'
+  register: ubuntu_mirror
   notify: update apt cache
+  changed_when: ubuntu_mirror is changed
 
 - name: (APT) Set Mint repository to local Xmission mirror
   ansible.builtin.replace:
     path: /etc/apt/sources.list.d/official-package-repositories.list
     regexp: '^deb\s+http:\/\/packages\.linuxmint\.com'
     replace: 'deb https://mirrors.xmission.com/linuxmint'
+  register: mint_mirror
   notify: update apt cache
+  changed_when: mint_mirror is changed
 
-- name: Force handler execution after apt changes
-  meta: flush_handlers  
-
-# - name: (APT) Set phased upgrade key
-#   ansible.builtin.lineinfile:
-#     path: /etc/apt/apt.conf.d/20phased-updates
-#     regexp: "^APT::Machine-ID"
-#     line: 'APT::Machine-ID "SCIUofUPhasedUpdatesMachID";'
-#     create: true
-
-# - name: Disable unattended updates
-#   when:
-#     - "'SelfAdminHosts' not in group_names"
-#     - ansible_facts['distribution'] == "Ubuntu"
-#   block:
-#     - name: Disable all periodic update options
-#       replace:
-#         path: /etc/apt/apt.conf.d/10periodic
-#         regexp: "1"
-#         replace: "0"
-#     - name: Disable all auto upgrade options
-#       replace:
-#         path: /etc/apt/apt.conf.d/20auto-upgrades
-#         regexp: "1"
-#         replace: "0"
-#     - name: Disable unattended upgrades
-#       lineinfile:
-#         path: /etc/apt/apt.conf.d/10periodic
-#         regexp: "^APT::Periodic::Unattended-Upgrade"
-#         line: 'APT::Periodic::Unattended-Upgrade "0";'
-#         create: yes
-#     - name: Stop unattended-upgrades and apt-daily.* systemd services
-#       service:
-#         name: "{{ item }}"
-#         state: stopped
-#       with_items:
-#         - unattended-upgrades
-#         - apt-daily
-#         - apt-daily.timer
-#         - apt-daily-upgrade
-#         - apt-daily-upgrade.timer
-#     - name: Disable unattended-upgrades and apt-daily.* systemd services
-#       systemd:
-#         name: "{{service}}"
-#         enabled: no
-#         masked: yes
-#       with_items:
-#         - unattended-upgrades
-#         - apt-daily.service
-#         - apt-daily.timer
-#         - apt-daily-upgrade.service
-#         - apt-daily-upgrade.timer
-#       loop_control:
-#         loop_var: service
+- name: Force handler execution after apt changes (Mint)
+  meta: flush_handlers
+  when: ubuntu_mirror is changed or mint_mirror is changed

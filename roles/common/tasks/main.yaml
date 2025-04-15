@@ -14,12 +14,21 @@
     src=templates/hosts.j2
     dest=/etc/hosts
 
+- name: Configure /etc/passwd for generic users (no access)
+  ansible.builtin.lineinfile:
+    path: /etc/passwd
+    line: '+::0:0:::/usr/sbin/nologin'
+    state: present
+    regexp: '^\+:'
+    insertafter: 'EOF'
+
 - name: Configure /etc/passwd for it-users
   ansible.builtin.lineinfile:
     path: /etc/passwd
-    line: "+@it-users::0:0:::"
+    line: '+@it-users::0:0:::'
     state: present
-    insertbefore: "::::::"
+    regexp: '@it-users'
+    insertbefore: '^\+'
 
 - name: Configure /etc/group
   ansible.builtin.lineinfile:
